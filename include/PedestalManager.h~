@@ -1,0 +1,55 @@
+#ifndef PEDESTALMANAGER_HH
+#define PEDESTALMANAGER_HH
+
+#include <TH2D.h>
+#include <vector>
+#include <map>
+#include "TFile.h"
+#include "TTree.h"
+#include "TCanvas.h"
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+class PedestalManager {
+public:
+	TFile	*fin;
+	TTree	*tin;
+	TFile	*fout;
+	TTree	*tout;
+	
+	Double_t        cycleID;
+	Double_t        triggerID;
+	vector<int>     *cellIDs;
+	vector<int>     *BCIDs;
+	vector<int>     *hitTags;
+	vector<int>     *gainTags;
+	vector<double>  *charges;
+	vector<double>  *times;
+	vector<int> vec_cellid;
+	TH2D *htimepeak;
+	TH2D *htimerms;
+	TH2D *hchargepeak;
+	TH2D *hchargerms;
+	map<int,TH2D*> map_layer_timepeak;
+	map<int,TH2D*> map_layer_timerms;
+	map<int,TH2D*> map_layer_chargepeak;
+	map<int,TH2D*> map_layer_chargerms;
+	map<int,TH1D*> map_cellid_htime;
+	map<int,TH1D*> map_cellid_hcharge;
+	map<int,int> map_cellid_exist;
+	double time_min=1000.,time_max=0.;
+	double charge_min=1000.,charge_max=0.;
+	double time_peak=0.,time_rms=0.,charge_peak=0.,charge_rms=0.;
+	int _cellid;
+	TString	input_list;
+
+	PedestalManager(const TString outname);
+	virtual ~PedestalManager();
+	virtual int AnaPedestal(const std::string &list,const int &sel_hittag);
+	virtual void ReadTree(const TString &fname);
+	virtual void SaveCanvas(TH2D* h,const string &name);
+};
+
+#endif
