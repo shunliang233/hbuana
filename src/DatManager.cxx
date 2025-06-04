@@ -13,14 +13,34 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	while(!b_begin && f_in.read((char*)(&buffer),1) ){
 		//cout<<hex<<buffer<<" ";
 		buffer_v.push_back(buffer);
+		// cout<<hex<<buffer<<" "<<endl;
 		if(buffer_v.size()>4) buffer_v.erase(buffer_v.begin(),buffer_v.begin()+buffer_v.size()-4);
-		if(buffer_v[0]==0xfb && buffer_v[1]==0xee && buffer_v[2]==0xfb && buffer_v[3]==0xee && buffer_v.size()==4) b_begin=1;
+		if(buffer_v.size()==4 && buffer_v[0]==0xfb && buffer_v[1]==0xee && buffer_v[2]==0xfb && buffer_v[3]==0xee) b_begin=1;
 	}
 	while(!b_end && f_in.read((char*)(&buffer),1)){
 		buffer_v.push_back(buffer);
 		int_tmp = buffer_v.size();
+		// cout<<hex<<buffer<<" "<<endl;
 		//if(int_tmp>4 && buffer_v[int_tmp-2] == 0xfe && buffer_v[int_tmp-1] == 0xee && buffer_v[int_tmp-4] == 0xfe && buffer_v[int_tmp-3] == 0xee) b_end=1;
-		if(int_tmp>=4 && buffer_v[int_tmp-2] == 0xfe && buffer_v[int_tmp-1] == 0xdd && buffer_v[int_tmp-4] == 0xfe && buffer_v[int_tmp-3] == 0xdd) b_end=1;
+		if(int_tmp>=4 && 
+		   buffer_v[int_tmp-2] == 0xfe && buffer_v[int_tmp-1] == 0xdd && 
+		   buffer_v[int_tmp-4] == 0xfe && buffer_v[int_tmp-3] == 0xdd){
+			b_end=1;
+		   }
+		if (f_in.eof()){
+			cout<<"CatchEventBag:readover "<<endl;
+			// buffer_v.clear();
+			for (int i = 0; i < 4; ++i){
+				cout<<hex<<buffer_v[int_tmp-4+i]<<" ";
+			}
+			cout<<endl;
+			return 0;
+		}
+	}
+	if (b_end==0){
+		cout<<"CatchEventBag:abnormal end "<<endl;
+		// buffer_v.clear();
+		return 0;
 	}
 	int_tmp=buffer_v.size();
 	cherenkov_counter=buffer_v[int_tmp-8]*0x1000000+buffer_v[int_tmp-7]*0x10000+buffer_v[int_tmp-6]*0x100+buffer_v[int_tmp-5];
@@ -84,20 +104,23 @@ int DatManager::CatchSPIROCBag(vector<int> &EventBuffer_v, vector<int> &buffer_v
 	bool b_end=0;
 	int buffer=0;
 	int i_begin=0;
-	int i_end=0;    
+	int i_end=0;
+	// cout <<hex<<EventBuffer_v[0]<<" "<<EventBuffer_v[1]<<" "<<EventBuffer_v[2]<<" "<<EventBuffer_v[3]<<" "<<EventBuffer_v.size()<<endl;
 	for (int i = 0; i < EventBuffer_v.size(); ++i){
 		if(b_begin==0 && EventBuffer_v[i]==0xfa && EventBuffer_v[i+1]==0x5a && 
-				EventBuffer_v[i+2]==0xfa && EventBuffer_v[i+3]==0x5a ){
+				EventBuffer_v[i+2]==0xfa && EventBuffer_v[i+3]==0x5a && i < EventBuffer_v.size()-4){
 			b_begin=1;
 			i_begin=i;
+			// cout<<hex<<i_begin<<" "<<EventBuffer_v[i]<<" "<<EventBuffer_v[i+1]<<" "<<EventBuffer_v[i+2]<<" "<<EventBuffer_v[i+3]<<" "<<EventBuffer_v.size()<<endl;
 		}
-		if(b_begin==1 && EventBuffer_v[i-3]==0xfe && EventBuffer_v[i-2]==0xee && 
-				EventBuffer_v[i-1]==0xfe && EventBuffer_v[i]==0xee ){
+		if(b_begin==1 && i > 2 && EventBuffer_v[i-3]==0xfe && EventBuffer_v[i-2]==0xee && 
+				EventBuffer_v[i-1]==0xfe && EventBuffer_v[i]==0xee){
 			b_end=1;
 			i_end=i;
 			break;
 		}            
 	}    
+	// cout<<hex<<i_begin<<" "<<i_end<<" "<<EventBuffer_v.size()<<" "<<b_begin<<" "<<b_end<<endl;
 	if((b_begin*b_end)==0){buffer_v.clear();EventBuffer_v.clear();return 0;}
 	buffer_v.assign(EventBuffer_v.begin()+i_begin,EventBuffer_v.begin()+i_end+1);
 	EventBuffer_v.erase(EventBuffer_v.begin(),EventBuffer_v.begin()+i_end+1);
@@ -294,13 +317,14 @@ int DatManager::Decode(const string& input_file,const string& output_file,const 
 	cout<<" Start Read "<<str_out<<" auto gain: "<<b_auto_gain<<" cherenkov: "<<b_cherenkov<<" Run:"<<_Run_No<<endl;
 	while(!(f_in.eof()) || b_chipbuffer){
 		//while((!(f_in.eof()) || b_chipbuffer) && Event_No<=1E4){
-		//if(Event_No%1000==0)cout<<"Event_No: "<<Event_No<<" Bag_No "<<Bag_No<<endl;
+		if(Event_No%1000==0)cout<<"Event_No: "<<Event_No<<" Bag_No "<<Bag_No<<endl;
 		_buffer_v.clear();
 		_EventBuffer_v.clear();
 		CatchEventBag(f_in,_EventBuffer_v,cherenkov_counter);
 		Bag_No++;
 		b_Event=0;
 		b_chipbuffer=Chipbuffer_empty();//just in case
+		cout <<dec<<Bag_No<<" CatchEventBag size "<<_EventBuffer_v.size()<<" cherenkov_counter "<<cherenkov_counter<<endl;
 		while(_EventBuffer_v.size()>74){    
 			CatchSPIROCBag(_EventBuffer_v,_buffer_v,layer_id,cycleID,triggerID);
 			// if(triggerID==last_trigID){

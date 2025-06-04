@@ -6,12 +6,12 @@ hbuana:
 
 #Dat file to ROOT Decoder
 DAT-ROOT:
-        on-off: False
+        on-off: True
         auto-gain: False
         cherenkov: False
         #file-list: /cefs/higgs/shiyk/Beam_2022/BeamData/HCAL/Particle/HCAL_alone/List_DIR/pi+/10GeV_list.txt
-        file-list: list_dat.txt
-        output-dir: ./
+        file-list: list_cosmic.txt
+        output-dir: /eos/user/y/ymaruya/FASER/AHCAL-data/
 
 
 #Pedestal analyse manager

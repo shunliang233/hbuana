@@ -1,1 +1,3 @@
-/publicfs/atlas/atlasnew/SM/VBS/zhenw/cepc/ahcal/cosmic_test/20220828_213004.root
+/eos/user/s/shunlian/AHCAL/data/LongRun/run25/AHCAL_Run25_20250519_220200.dat 
+/eos/user/s/shunlian/AHCAL/data/LongRun/run26/AHCAL_Run26_20250521_204627.dat
+/eos/user/s/shunlian/AHCAL/data/AHCAL_Run8_20250415_163405.dat
