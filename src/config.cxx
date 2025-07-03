@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "config.h"
 #include "DatManager.h"
 #include "DacManager.h"
@@ -11,32 +12,31 @@ using namespace std;
 void Config::Parse(const string config_file)
 {
 	conf = YAML::LoadFile(config_file);
-	// Printing version number
 	cout << "HBUANA Version: " << conf["hbuana"]["version"].as<std::string>() << endl;
 	cout << "HBUANA Github Repository: " << conf["hbuana"]["github"].as<std::string>() << endl;
 }
 
+// Run DatManager Class
 int Config::Run()
 {
 	if (conf["DAT-ROOT"]["on-off"].as<bool>())
 	{
 		cout << "DAT mode: ON" << endl;
 		if (conf["DAT-ROOT"]["auto-gain"].as<bool>())
-			cout << "auto gain mode: ON" << endl; //<<(conf["DAT-ROOT"]["auto-gain"].as<bool>())<<endl;
+			cout << "auto gain mode: ON" << endl;
 		if (conf["DAT-ROOT"]["cherenkov"].as<bool>())
-			cout << "cherenkov detector: ON" << endl; //<<(conf["DAT-ROOT"]["auto-gain"].as<bool>())<<endl;
+			cout << "cherenkov detector: ON" << endl;
 		if (conf["DAT-ROOT"]["file-list"].as<std::string>() == "" || conf["DAT-ROOT"]["output-dir"].as<std::string>() == "")
 		{
-			cout << "ERROR: Please specify file list or output-dir for dat files" << endl;
+			cout << "ERROR: Please specify file list and output-dir for dat files." << endl;
 		}
 		else
 		{
 			ifstream dat_list(conf["DAT-ROOT"]["file-list"].as<std::string>());
 			DatManager dm;
-			while (!dat_list.eof())
+			string dat_temp;
+			while (dat_list >> dat_temp) // Read 2 bytes
 			{
-				string dat_temp;
-				dat_list >> dat_temp;
 				if (dat_temp == "")
 					continue;
 				dm.Decode(dat_temp, conf["DAT-ROOT"]["output-dir"].as<std::string>(), conf["DAT-ROOT"]["auto-gain"].as<bool>(), conf["DAT-ROOT"]["cherenkov"].as<bool>());
