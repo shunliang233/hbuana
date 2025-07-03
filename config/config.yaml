@@ -1,7 +1,7 @@
 #Printing version information
 hbuana:
-        version: 1.0
-        github: git@github.com:wangz1996/cepc_hbuana.git
+        version: 2.0.0
+        github: git@github.com:shunliang233/hbuana.git
 
 
 #Dat file to ROOT Decoder

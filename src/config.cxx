@@ -1,3 +1,4 @@
+#include <iostream>
 #include <fstream>
 #include "config.h"
 #include "DatManager.h"
@@ -6,6 +7,7 @@
 
 using namespace std;
 
+// Parse the YAML file
 void Config::Parse(const string config_file)
 {
 	conf = YAML::LoadFile(config_file);
@@ -81,6 +83,7 @@ int Config::Run()
 	return 1;
 }
 
+// Copy a YAML file from template
 void Config::Print()
 {
 	YAML::Node example_config = YAML::LoadFile("/eos/user/s/shunlian/AHCAL/hbuana/config/config.yaml");
@@ -89,10 +92,6 @@ void Config::Print()
 	fout.close();
 }
 
-Config::Config() : conf(0)
-{
-}
+Config::Config() : conf(0) {}
 
-Config::~Config()
-{
-}
+Config::~Config() {}

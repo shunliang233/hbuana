@@ -3,8 +3,6 @@
 #include <string>
 #include "yaml-cpp/yaml.h"
 
-using namespace std;
-
 class Config
 {
 public:
@@ -14,7 +12,7 @@ public:
 	~Config();
 
 	virtual void Print();
-	virtual void Parse(const string config_file);
+	virtual void Parse(const std::string config_file);
 	virtual int Run();
 };
 

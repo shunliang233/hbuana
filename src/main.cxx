@@ -1,4 +1,5 @@
 #include <ctime>
+#include <iostream>
 #include "config.h"
 
 using namespace std;
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
 	{
 		if (string(argv[i]) == "-c")
 		{
-			string config_file = "";
+			string config_file;
 			config_file = string(argv[i + 1]);
 			config.Parse(config_file);
 			config.Run();
