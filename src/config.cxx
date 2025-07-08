@@ -32,8 +32,8 @@ int Config::Run()
 		}
 		else
 		{
-			ifstream dat_list(conf["DAT-ROOT"]["file-list"].as<std::string>());
 			DatManager dm;
+			ifstream dat_list(conf["DAT-ROOT"]["file-list"].as<std::string>());
 			string dat_temp;
 			while (dat_list >> dat_temp) // Read 2 bytes
 			{

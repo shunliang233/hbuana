@@ -11,7 +11,7 @@ DAT-ROOT:
         cherenkov: False
         #file-list: /cefs/higgs/shiyk/Beam_2022/BeamData/HCAL/Particle/HCAL_alone/List_DIR/pi+/10GeV_list.txt
         file-list: list_cosmic.txt
-        output-dir: /eos/user/y/ymaruya/FASER/AHCAL-data/
+        output-dir: /eos/home-s/shunlian/AHCAL/data/LongRun/
 
 
 #Pedestal analyse manager

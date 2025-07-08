@@ -14,7 +14,7 @@ Binary File → Event Bags → SPIROC Bags → Chip Buffers → ROOT Tree
 Event bags are the top-level data containers in the binary stream.
 
 - **Start Marker**: `0xfb 0xee 0xfb 0xee` (4 bytes)
-- **End Marker**: `0xfe 0xdd 0xfe 0xdd` (4 bytes)  
+- **End Marker**: `0xfe 0xdd 0xfe 0xdd` (4 bytes)
 - **Cherenkov Counter**: Last 8 bytes before end marker
 - **Data**: Contains multiple SPIROC bags between markers
 
