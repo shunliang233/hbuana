@@ -35,10 +35,8 @@ int Config::Run()
 			DatManager dm;
 			ifstream dat_list(conf["DAT-ROOT"]["file-list"].as<std::string>());
 			string dat_temp;
-			while (dat_list >> dat_temp) // Read 2 bytes
+			while (dat_list >> dat_temp) // One .dat file
 			{
-				if (dat_temp == "")
-					continue;
 				dm.Decode(dat_temp, conf["DAT-ROOT"]["output-dir"].as<std::string>(), conf["DAT-ROOT"]["auto-gain"].as<bool>(), conf["DAT-ROOT"]["cherenkov"].as<bool>());
 			}
 		}

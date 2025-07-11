@@ -6,20 +6,21 @@ using namespace std;
 extern char char_tmp[200];
 int int_tmp = 0;
 int flag = 0;
+
 int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &cherenkov_counter)
 {
-	// cout<<"catch a bag"<<endl;
-	bool b_begin = 0;
-	bool b_end = 0;
-	int buffer = 0;
+	bool b_begin = 0; // Mark the begin of one event
+	bool b_end = 0;   // Mark the end of one event
+	unsigned char buffer = 0; // Read 1 Byte to buffer
 	buffer_v.clear();
-	while (!b_begin && f_in.read((char *)(&buffer), 1))
+
+	// Find begin of an event
+	while (!b_begin && f_in.read(reinterpret_cast<char*>(&buffer), 1))
 	{
-		// cout<<hex<<buffer<<" ";
 		buffer_v.push_back(buffer);
-		// cout<<hex<<buffer<<" "<<endl;
 		if (buffer_v.size() > 4)
 			buffer_v.erase(buffer_v.begin(), buffer_v.begin() + buffer_v.size() - 4);
+		// Find event header: fb ee fb ee
 		if (buffer_v.size() == 4 && buffer_v[0] == 0xfb && buffer_v[1] == 0xee && buffer_v[2] == 0xfb && buffer_v[3] == 0xee)
 			b_begin = 1;
 	}
@@ -60,6 +61,7 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	else
 		return 1;
 }
+
 int DatManager::CatchSPIROCBag(ifstream &f_in, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID)
 {
 	// cout<<"catch a bag"<<endl;
@@ -118,6 +120,7 @@ int DatManager::CatchSPIROCBag(ifstream &f_in, vector<int> &buffer_v, int &layer
 	else
 		return 1;
 }
+
 int DatManager::CatchSPIROCBag(vector<int> &EventBuffer_v, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID)
 {
 	// cout<<"catch a bag"<<endl;
@@ -198,6 +201,7 @@ int DatManager::CatchSPIROCBag(vector<int> &EventBuffer_v, vector<int> &buffer_v
 	buffer_v.erase(buffer_v.begin() + 2, buffer_v.begin() + 5);
 	return 1;
 }
+
 int DatManager::DecodeAEvent(vector<int> &chip_v, int layer_id, int Memo_ID, const bool b_auto_gain)
 {
 	int size = chip_v.size();
@@ -322,6 +326,7 @@ int DatManager::FillChipBuffer(vector<int> &buffer_v, int cycleID, int triggerID
 
 int DatManager::Decode(const string &input_file, const string &output_file, const bool b_auto_gain, const bool b_cherenkov)
 {
+	// Initialize variables
 	ifstream f_in;
 	int layer_id;
 	int cycleID;
@@ -344,7 +349,8 @@ int DatManager::Decode(const string &input_file, const string &output_file, cons
 			_chip_v[i_layer][i_chip].clear();
 		}
 	}
-	// string str_out=outputDir+"/"+"cosmic.root";
+
+	// Set output file name and create TFile and TTree
 	string tmp_string = input_file;
 	tmp_string = tmp_string.substr(tmp_string.find_last_of('/') + 1);
 	tmp_string = tmp_string.substr(0, tmp_string.find_last_of('.'));
@@ -362,6 +368,8 @@ int DatManager::Decode(const string &input_file, const string &output_file, cons
 	}
 	TTree *tree = new TTree("Raw_Hit", "data from binary file");
 	SetTreeBranch(tree);
+
+	// Initialize variables for event processing
 	int Bag_No = 0;
 	int Event_No = 0;
 	int Cherenkov_signal = 0;
@@ -381,7 +389,7 @@ int DatManager::Decode(const string &input_file, const string &output_file, cons
 	bool b_ReadOver = 1;
 	bool b_chipbuffer = 0;
 	bool b_Event = 0;
-	cout << " Start Read " << str_out << " auto gain: " << b_auto_gain << " cherenkov: " << b_cherenkov << " Run:" << _Run_No << endl;
+	cout << " Start Read File: " << str_out << " auto gain: " << b_auto_gain << " cherenkov: " << b_cherenkov << " Run:" << _Run_No << endl;
 	while (!(f_in.eof()) || b_chipbuffer)
 	{
 		// while((!(f_in.eof()) || b_chipbuffer) && Event_No<=1E4){
