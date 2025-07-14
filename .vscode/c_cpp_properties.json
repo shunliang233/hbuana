@@ -4,8 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "~/work/Environments/apps/ROOT-v6.32.10/include",
-                "~/work/AHCAL/yaml-cpp/include"
+                "/eos/home-s/shunlian/Environments/apps/ROOT-v6.32.10/include",
+                "/eos/home-s/shunlian/AHCAL/yaml-cpp/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

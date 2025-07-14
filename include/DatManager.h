@@ -18,7 +18,12 @@ using namespace std;
 class DatManager
 {
 private:
-	// 1. Constants for event - using constexpr for compile-time optimization
+	// 1. Constants for layers, chips, channels.
+	static const int Layer_No = 40;
+	static const int chip_No = 9;
+	static const int channel_No = 36;
+
+	// 2. Constants for event - using constexpr for compile-time optimization
 	static constexpr std::array<unsigned char, 4> s_event_head = {0xfb, 0xee, 0xfb, 0xee};
 	static constexpr std::array<unsigned char, 4> s_event_foot = {0xfe, 0xdd, 0xfe, 0xdd};
 	static constexpr size_t s_event_head_size = s_event_head.size();
@@ -27,20 +32,17 @@ private:
 	static constexpr size_t s_event_foot_overlap = s_event_foot_size - 1;
 	static constexpr size_t s_least_event_size = s_event_head_size + s_event_foot_size;
 
-	// 2. Buffers to hold data read from file
-	static constexpr size_t s_read_size = 4096;						// Size of tmp_buffer to read from file
-	static constexpr size_t s_buffer_size = 100000;					// Size of m_buffer to hold data
+	// 3. Buffers to hold data read from file
+	static constexpr size_t s_read_size = 40960;					// Size of temp_buffer to read from file
+	static constexpr size_t s_buffer_size = 1000000;				// Size of m_buffer to hold data
 	static constexpr size_t s_half_buffer_size = s_buffer_size / 2; // Half of the s_buffer_size
 	vector<unsigned char> m_buffer;									// Buffer for read data
-	size_t _buffer_start_pos = 0;									// Start position of valid data in m_buffer
+	size_t m_buffer_start = 0;									// Start position of valid data in m_buffer
 
 	vector<int> _EventBuffer_v; // Buffer for 1 event data
 
 public:
 	static const int channel_FEE = 73; //(36charges+36times + BCIDs )*16column+ ChipID
-	static const int Layer_No = 40;
-	static const int chip_No = 9;
-	static const int channel_No = 36;
 	string outname = "";
 	int _Run_No;
 	int _cycleID;

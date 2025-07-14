@@ -14,10 +14,10 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	buffer_v.clear();
 
 	// 2. Clean up buffer if it gets too large (avoid memory bloat)
-	if (m_buffer.size() > s_buffer_size && _buffer_start_pos > s_half_buffer_size)
+	if (m_buffer.size() > s_buffer_size && m_buffer_start > s_half_buffer_size)
 	{
-		m_buffer.erase(m_buffer.begin(), m_buffer.begin() + _buffer_start_pos);
-		_buffer_start_pos = 0;
+		m_buffer.erase(m_buffer.begin(), m_buffer.begin() + m_buffer_start);
+		m_buffer_start = 0;
 	}
 
 	// 3. Find header
@@ -25,15 +25,15 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	size_t header_pos = 0;
 
 	// Check if header exists in remaining data
-	if (_buffer_start_pos < m_buffer.size())
+	if (m_buffer_start < m_buffer.size())
 	{
-		auto it = std::search(m_buffer.begin() + _buffer_start_pos, m_buffer.end(),
+		auto it = std::search(m_buffer.begin() + m_buffer_start, m_buffer.end(),
 							  s_event_head.begin(), s_event_head.end());
 		if (it != m_buffer.end())
 		{
 			found_header = true;
 			header_pos = std::distance(m_buffer.begin(), it);
-			_buffer_start_pos = header_pos; // Update start position to header
+			m_buffer_start = header_pos; // Update start position to header
 		}
 	}
 
@@ -45,7 +45,7 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 		m_buffer.insert(m_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
 
 		// Search for header in the newly added data plus some overlap
-		size_t search_start = std::max(_buffer_start_pos,
+		size_t search_start = std::max(m_buffer_start,
 									   old_size > s_event_head_overlap ? old_size - s_event_head_overlap : 0);
 		auto it = std::search(m_buffer.begin() + search_start, m_buffer.end(),
 							  s_event_head.begin(), s_event_head.end());
@@ -53,7 +53,7 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 		{
 			found_header = true;
 			header_pos = std::distance(m_buffer.begin(), it);
-			_buffer_start_pos = header_pos; // Update start position to header
+			m_buffer_start = header_pos; // Update start position to header
 			break;
 		}
 	}
@@ -68,7 +68,7 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	size_t footer_end_pos = 0;
 
 	// Check if footer already exists in current buffer
-	auto it = std::search(m_buffer.begin() + _buffer_start_pos, m_buffer.end(),
+	auto it = std::search(m_buffer.begin() + m_buffer_start, m_buffer.end(),
 						  s_event_foot.begin(), s_event_foot.end());
 	if (it != m_buffer.end())
 	{
@@ -84,7 +84,7 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 		m_buffer.insert(m_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
 
 		// Search for footer in the newly added data plus some overlap
-		size_t search_start = std::max(_buffer_start_pos,
+		size_t search_start = std::max(m_buffer_start,
 									   old_size > s_event_foot_overlap ? old_size - s_event_foot_overlap : 0);
 		it = std::search(m_buffer.begin() + search_start, m_buffer.end(),
 						 s_event_foot.begin(), s_event_foot.end());
@@ -120,7 +120,7 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 						(buffer_v[buffer_v.size() - 5]);
 
 	// 5. Update start position for next call (no erase needed!)
-	_buffer_start_pos = footer_end_pos;
+	m_buffer_start = footer_end_pos;
 
 	// 6. Check if end of file
 	if (f_in.eof())
