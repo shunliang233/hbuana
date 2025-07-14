@@ -1,5 +1,4 @@
-#ifndef DATMANAGER_h
-#define DATMANAGER_h
+#pragma once
 
 #include <stdio.h>
 
@@ -8,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <array>
 
 #include <TFile.h>
 #include <TTree.h>
@@ -18,8 +18,23 @@ using namespace std;
 class DatManager
 {
 private:
-	vector<unsigned char> _data_buffer;  // Buffer for data reading
-	size_t _buffer_start_pos = 0;  // Start position of valid data in _data_buffer
+	// 1. Constants for event - using constexpr for compile-time optimization
+	static constexpr std::array<unsigned char, 4> s_event_head = {0xfb, 0xee, 0xfb, 0xee};
+	static constexpr std::array<unsigned char, 4> s_event_foot = {0xfe, 0xdd, 0xfe, 0xdd};
+	static constexpr size_t s_event_head_size = s_event_head.size();
+	static constexpr size_t s_event_foot_size = s_event_foot.size();
+	static constexpr size_t s_event_head_overlap = s_event_head_size - 1;
+	static constexpr size_t s_event_foot_overlap = s_event_foot_size - 1;
+	static constexpr size_t s_least_event_size = s_event_head_size + s_event_foot_size;
+
+	// 2. Buffers to hold data read from file
+	static constexpr size_t s_read_size = 4096;						// Size of tmp_buffer to read from file
+	static constexpr size_t s_buffer_size = 100000;					// Size of m_buffer to hold data
+	static constexpr size_t s_half_buffer_size = s_buffer_size / 2; // Half of the s_buffer_size
+	vector<unsigned char> m_buffer;									// Buffer for read data
+	size_t _buffer_start_pos = 0;									// Start position of valid data in m_buffer
+
+	vector<int> _EventBuffer_v; // Buffer for 1 event data
 
 public:
 	static const int channel_FEE = 73; //(36charges+36times + BCIDs )*16column+ ChipID
@@ -32,7 +47,6 @@ public:
 	int _triggerID;
 	unsigned int _Event_Time;
 	vector<int> _buffer_v;
-	vector<int> _EventBuffer_v;
 	vector<int> _chip_v[Layer_No][chip_No];
 	vector<int> _cellID;
 	vector<int> _bcid;
@@ -78,6 +92,11 @@ public:
 
 	void BranchClear();
 	int DecodeAEvent(vector<int> &chip_v, int layer_ID, int Memo_ID, const bool b_auto_gain);
+
+	/**
+	 * @brief 检查芯片缓冲区是否为空
+	 * @return 返回芯片缓冲区状态（0 表示为空，1 表示不为空）
+	 */
 	int Chipbuffer_empty()
 	{
 		int b_chipbuffer = 0;
@@ -91,7 +110,6 @@ public:
 		}
 		return b_chipbuffer;
 	}
+
 	int FillChipBuffer(vector<int> &buffer_v, int cycleID, int triggerID, int layer_id);
 };
-
-#endif

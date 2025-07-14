@@ -1,5 +1,5 @@
 {
-    "C_Cpp.intelliSenseCachePath": "/tmp/vscode-cpptools",
+    "C_Cpp.intelliSenseCachePath": "~/work/cache",
     "files.associations": {
         "iosfwd": "cpp",
         "allocator": "cpp",

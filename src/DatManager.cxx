@@ -10,19 +10,13 @@ int flag = 0;
 int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &cherenkov_counter)
 {
 	// 1. Initialization
-	const std::vector<unsigned char> header = {0xfb, 0xee, 0xfb, 0xee};
-	const std::vector<unsigned char> footer = {0xfe, 0xdd, 0xfe, 0xdd};
-	const size_t header_overlap = header.size() - 1;
-	const size_t footer_overlap = footer.size() - 1;
-	const size_t least_size = header.size() + footer.size(); // Minimum size of a valid event
-	const size_t BUFFER_SIZE = 4096;
-	std::vector<unsigned char> temp_buffer(BUFFER_SIZE);
+	std::vector<unsigned char> temp_buffer(s_read_size);
 	buffer_v.clear();
 
 	// 2. Clean up buffer if it gets too large (avoid memory bloat)
-	if (_data_buffer.size() > 100000 && _buffer_start_pos > 50000)
+	if (m_buffer.size() > s_buffer_size && _buffer_start_pos > s_half_buffer_size)
 	{
-		_data_buffer.erase(_data_buffer.begin(), _data_buffer.begin() + _buffer_start_pos);
+		m_buffer.erase(m_buffer.begin(), m_buffer.begin() + _buffer_start_pos);
 		_buffer_start_pos = 0;
 	}
 
@@ -31,34 +25,34 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	size_t header_pos = 0;
 
 	// Check if header exists in remaining data
-	if (_buffer_start_pos < _data_buffer.size())
+	if (_buffer_start_pos < m_buffer.size())
 	{
-		auto it = std::search(_data_buffer.begin() + _buffer_start_pos, _data_buffer.end(),
-							  header.begin(), header.end());
-		if (it != _data_buffer.end())
+		auto it = std::search(m_buffer.begin() + _buffer_start_pos, m_buffer.end(),
+							  s_event_head.begin(), s_event_head.end());
+		if (it != m_buffer.end())
 		{
 			found_header = true;
-			header_pos = std::distance(_data_buffer.begin(), it);
+			header_pos = std::distance(m_buffer.begin(), it);
 			_buffer_start_pos = header_pos; // Update start position to header
 		}
 	}
 
 	// If header not found, read more data from file
-	while (!found_header && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), BUFFER_SIZE))
+	while (!found_header && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), s_read_size))
 	{
 		size_t bytes_read = f_in.gcount();
-		size_t old_size = _data_buffer.size();
-		_data_buffer.insert(_data_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
+		size_t old_size = m_buffer.size();
+		m_buffer.insert(m_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
 
 		// Search for header in the newly added data plus some overlap
 		size_t search_start = std::max(_buffer_start_pos,
-									   old_size > header_overlap ? old_size - header_overlap : 0);
-		auto it = std::search(_data_buffer.begin() + search_start, _data_buffer.end(),
-							  header.begin(), header.end());
-		if (it != _data_buffer.end())
+									   old_size > s_event_head_overlap ? old_size - s_event_head_overlap : 0);
+		auto it = std::search(m_buffer.begin() + search_start, m_buffer.end(),
+							  s_event_head.begin(), s_event_head.end());
+		if (it != m_buffer.end())
 		{
 			found_header = true;
-			header_pos = std::distance(_data_buffer.begin(), it);
+			header_pos = std::distance(m_buffer.begin(), it);
 			_buffer_start_pos = header_pos; // Update start position to header
 			break;
 		}
@@ -74,30 +68,30 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	size_t footer_end_pos = 0;
 
 	// Check if footer already exists in current buffer
-	auto it = std::search(_data_buffer.begin() + _buffer_start_pos, _data_buffer.end(),
-						  footer.begin(), footer.end());
-	if (it != _data_buffer.end())
+	auto it = std::search(m_buffer.begin() + _buffer_start_pos, m_buffer.end(),
+						  s_event_foot.begin(), s_event_foot.end());
+	if (it != m_buffer.end())
 	{
 		found_footer = true;
-		footer_end_pos = std::distance(_data_buffer.begin(), it) + footer.size();
+		footer_end_pos = std::distance(m_buffer.begin(), it) + s_event_foot_size;
 	}
 
 	// If footer not found in current buffer, read more data from file
-	while (!found_footer && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), BUFFER_SIZE))
+	while (!found_footer && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), s_read_size))
 	{
 		size_t bytes_read = f_in.gcount();
-		size_t old_size = _data_buffer.size();
-		_data_buffer.insert(_data_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
+		size_t old_size = m_buffer.size();
+		m_buffer.insert(m_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
 
 		// Search for footer in the newly added data plus some overlap
 		size_t search_start = std::max(_buffer_start_pos,
-									   old_size > footer_overlap ? old_size - footer_overlap : 0);
-		it = std::search(_data_buffer.begin() + search_start, _data_buffer.end(),
-						 footer.begin(), footer.end());
-		if (it != _data_buffer.end())
+									   old_size > s_event_foot_overlap ? old_size - s_event_foot_overlap : 0);
+		it = std::search(m_buffer.begin() + search_start, m_buffer.end(),
+						 s_event_foot.begin(), s_event_foot.end());
+		if (it != m_buffer.end())
 		{
 			found_footer = true;
-			footer_end_pos = std::distance(_data_buffer.begin(), it) + footer.size();
+			footer_end_pos = std::distance(m_buffer.begin(), it) + s_event_foot_size;
 			break;
 		}
 	}
@@ -111,10 +105,10 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 	// 3. Copy event data to buffer_v using iterators (more efficient)
 	size_t event_size = footer_end_pos - header_pos;
 	buffer_v.reserve(event_size); // Reserve space to avoid reallocation
-	buffer_v.assign(_data_buffer.begin() + header_pos,
-					_data_buffer.begin() + footer_end_pos);
+	buffer_v.assign(m_buffer.begin() + header_pos,
+					m_buffer.begin() + footer_end_pos);
 
-	if (buffer_v.size() < least_size)
+	if (buffer_v.size() < s_least_event_size)
 	{
 		return 0;
 	}
@@ -468,7 +462,7 @@ int DatManager::Decode(const string &input_file, const string &output_file, cons
 	bool b_Event = 0;
 	cout << " Start Read File: " << str_out << " auto gain: " << b_auto_gain << " cherenkov: " << b_cherenkov << " Run:" << _Run_No << endl;
 
-	//
+	// 4. Read event data
 	while (!(f_in.eof()) || b_chipbuffer)
 	{
 		// while((!(f_in.eof()) || b_chipbuffer) && Event_No<=1E4){
