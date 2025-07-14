@@ -15,6 +15,9 @@ using namespace std;
 
 class DatManager
 {
+private:
+	vector<unsigned char> _data_buffer;  // Buffer for read data
+
 public:
 	static const int channel_FEE = 73; //(36charges+36times + BCIDs )*16column+ ChipID
 	static const int Layer_No = 40;

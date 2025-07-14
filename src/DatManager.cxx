@@ -9,53 +9,88 @@ int flag = 0;
 
 int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &cherenkov_counter)
 {
-	bool b_begin = 0; // Mark the begin of one event
-	bool b_end = 0;   // Mark the end of one event
-	unsigned char buffer = 0; // Read 1 Byte to buffer
+	// Initialization
+	const std::vector<unsigned char> header = {0xfb, 0xee, 0xfb, 0xee};
+	const std::vector<unsigned char> footer = {0xfe, 0xdd, 0xfe, 0xdd};
+	const size_t BUFFER_SIZE = 4096;
+	std::vector<unsigned char> temp_buffer(BUFFER_SIZE);
 	buffer_v.clear();
 
-	// Find begin of an event
-	while (!b_begin && f_in.read(reinterpret_cast<char*>(&buffer), 1))
+	// 1. Find header and erase data before header
+	bool found_header = false;
+	// First check if header exists in remaining data
+	if (!_data_buffer.empty())
 	{
-		buffer_v.push_back(buffer);
-		if (buffer_v.size() > 4)
-			buffer_v.erase(buffer_v.begin(), buffer_v.begin() + buffer_v.size() - 4);
-		// Find event header: fb ee fb ee
-		if (buffer_v.size() == 4 && buffer_v[0] == 0xfb && buffer_v[1] == 0xee && buffer_v[2] == 0xfb && buffer_v[3] == 0xee)
-			b_begin = 1;
-	}
-	while (!b_end && f_in.read((char *)(&buffer), 1))
-	{
-		buffer_v.push_back(buffer);
-		int_tmp = buffer_v.size();
-		// cout<<hex<<buffer<<" "<<endl;
-		// if(int_tmp>4 && buffer_v[int_tmp-2] == 0xfe && buffer_v[int_tmp-1] == 0xee && buffer_v[int_tmp-4] == 0xfe && buffer_v[int_tmp-3] == 0xee) b_end=1;
-		if (int_tmp >= 4 &&
-			buffer_v[int_tmp - 2] == 0xfe && buffer_v[int_tmp - 1] == 0xdd &&
-			buffer_v[int_tmp - 4] == 0xfe && buffer_v[int_tmp - 3] == 0xdd)
+		auto it = std::search(_data_buffer.begin(), _data_buffer.end(), header.begin(), header.end());
+		if (it != _data_buffer.end())
 		{
-			b_end = 1;
-		}
-		if (f_in.eof())
-		{
-			cout << "CatchEventBag:readover " << endl;
-			// buffer_v.clear();
-			for (int i = 0; i < 4; ++i)
-			{
-				cout << hex << buffer_v[int_tmp - 4 + i] << " ";
-			}
-			cout << endl;
-			return 0;
+			found_header = true;
+			_data_buffer.erase(_data_buffer.begin(), it);
 		}
 	}
-	if (b_end == 0)
+	// If header not found, read more data from file
+	while (!found_header && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), BUFFER_SIZE))
 	{
-		cout << "CatchEventBag:abnormal end " << endl;
-		// buffer_v.clear();
+		size_t bytes_read = f_in.gcount();
+		_data_buffer.insert(_data_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
+		auto it = std::search(_data_buffer.begin(), _data_buffer.end(), header.begin(), header.end());
+		// If found header, erase data before header
+		if (it != _data_buffer.end())
+		{
+			found_header = true;
+			_data_buffer.erase(_data_buffer.begin(), it);
+			break;
+		}
+	}
+	if (!found_header)
+		return 0;
+
+	// 2. Find footer position
+	bool found_footer = false;
+	size_t footer_pos = 0;
+	// First check if footer exists in remaining data
+	if (!_data_buffer.empty())
+	{
+		auto it = std::search(_data_buffer.begin(), _data_buffer.end(), footer.begin(), footer.end());
+		if (it != _data_buffer.end())
+		{
+			found_footer = true;
+			footer_pos = std::distance(_data_buffer.begin(), it) + footer.size();
+		}
+	}
+	// If footer not found, read more data from file
+	while (!found_footer && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), BUFFER_SIZE))
+	{
+		size_t bytes_read = f_in.gcount();
+		_data_buffer.insert(_data_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
+		auto it = std::search(_data_buffer.begin(), _data_buffer.end(), footer.begin(), footer.end());
+		// If found footer, mark the position and break
+		if (it != _data_buffer.end())
+		{
+			found_footer = true;
+			footer_pos = std::distance(_data_buffer.begin(), it) + footer.size();
+			break;
+		}
+	}
+	if (!found_footer)
+	{
+		cout << "CatchEventBag:abnormal end" << endl;
 		return 0;
 	}
-	int_tmp = buffer_v.size();
-	cherenkov_counter = buffer_v[int_tmp - 8] * 0x1000000 + buffer_v[int_tmp - 7] * 0x10000 + buffer_v[int_tmp - 6] * 0x100 + buffer_v[int_tmp - 5];
+
+	// 3. Copy event data to buffer_v, and keep remaining data for next call
+	buffer_v.assign(_data_buffer.begin(), _data_buffer.begin() + footer_pos);
+	if (buffer_v.size() < 8)
+		return 0;
+	_data_buffer.erase(_data_buffer.begin(), _data_buffer.begin() + footer_pos);
+
+	// 4. Get Cherenkov Counter
+	cherenkov_counter = (buffer_v[buffer_v.size() - 8] << 24) +
+						(buffer_v[buffer_v.size() - 7] << 16) +
+						(buffer_v[buffer_v.size() - 6] << 8) +
+						(buffer_v[buffer_v.size() - 5]);
+
+	// 5. Check if end of file
 	if (f_in.eof())
 		return 0;
 	else
@@ -390,18 +425,20 @@ int DatManager::Decode(const string &input_file, const string &output_file, cons
 	bool b_chipbuffer = 0;
 	bool b_Event = 0;
 	cout << " Start Read File: " << str_out << " auto gain: " << b_auto_gain << " cherenkov: " << b_cherenkov << " Run:" << _Run_No << endl;
+
+	//
 	while (!(f_in.eof()) || b_chipbuffer)
 	{
 		// while((!(f_in.eof()) || b_chipbuffer) && Event_No<=1E4){
-		if (Event_No % 1000 == 0)
-			cout << "Event_No: " << Event_No << " Bag_No " << Bag_No << endl;
+		// if (Event_No % 1000 == 0)
+		// 	cout << "Event_No: " << Event_No << " Bag_No " << Bag_No << endl;
 		_buffer_v.clear();
 		_EventBuffer_v.clear();
 		CatchEventBag(f_in, _EventBuffer_v, cherenkov_counter);
 		Bag_No++;
 		b_Event = 0;
 		b_chipbuffer = Chipbuffer_empty(); // just in case
-		cout << dec << Bag_No << " CatchEventBag size " << _EventBuffer_v.size() << " cherenkov_counter " << cherenkov_counter << endl;
+		// cout << dec << Bag_No << " CatchEventBag size " << _EventBuffer_v.size() << " cherenkov_counter " << cherenkov_counter << endl;
 		while (_EventBuffer_v.size() > 74)
 		{
 			CatchSPIROCBag(_EventBuffer_v, _buffer_v, layer_id, cycleID, triggerID);
