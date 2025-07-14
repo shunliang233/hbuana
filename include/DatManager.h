@@ -1,12 +1,14 @@
 #ifndef DATMANAGER_h
 #define DATMANAGER_h
 
+#include <stdio.h>
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <stdio.h>
 #include <vector>
 #include <string>
+
 #include <TFile.h>
 #include <TTree.h>
 #include <TMath.h>
@@ -16,7 +18,8 @@ using namespace std;
 class DatManager
 {
 private:
-	vector<unsigned char> _data_buffer;  // Buffer for read data
+	vector<unsigned char> _data_buffer;  // Buffer for data reading
+	size_t _buffer_start_pos = 0;  // Start position of valid data in _data_buffer
 
 public:
 	static const int channel_FEE = 73; //(36charges+36times + BCIDs )*16column+ ChipID
