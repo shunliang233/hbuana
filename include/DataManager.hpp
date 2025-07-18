@@ -52,12 +52,33 @@ public:
      */
     bool next();
 
+    // 读取并分割所有事件，返回每个事件的起止位置和异常标记
+    struct EventInfo
+    {
+        std::size_t head_pos;
+        std::size_t foot_pos; // 如果没有找到 FOOT，则为 std::string::npos
+        bool is_abnormal;     // true 表示丢失 FOOT
+    };
+
+    /**
+     * @brief 扫描整个文件，分割所有事件
+     * @return 所有事件的信息列表
+     */
+    std::vector<EventInfo> scan_events();
+
+    /**
+     * @brief 读取指定事件内容
+     * @param info 事件信息
+     * @return 事件的字节内容
+     */
+    std::vector<uint8_t> get_event(const EventInfo &info);
+
 private:
-    static constexpr std::size_t CHUNK_SIZE = 4096;  // Size of each read chunk
-    static constexpr std::size_t WINDOW_SIZE = 8; // Size of the processing window
-    std::ifstream m_fin;                             // Input file stream
-    std::vector<uint8_t> m_buffer;                   // 当前窗口的内容
-    std::vector<uint8_t> m_tail;                     // 上一块的尾部
-    std::size_t m_offset = 0;                        // 当前窗口在文件中的起始偏移
-    bool m_file_end = false;                         // 标记文件是否已结束
+    static constexpr std::size_t CHUNK_SIZE = 4096; // Size of each read chunk
+    static constexpr std::size_t WINDOW_SIZE = 8;   // Size of the processing window
+    std::ifstream m_fin;                            // Input file stream
+    std::vector<uint8_t> m_buffer;                  // 当前窗口的内容
+    std::vector<uint8_t> m_tail;                    // 上一块的尾部
+    std::size_t m_offset = 0;                       // 当前窗口在文件中的起始偏移
+    bool m_file_end = false;                        // 标记文件是否已结束
 };

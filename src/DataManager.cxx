@@ -1,3 +1,4 @@
+#include <vector>
 #include "DataManager.hpp"
 
 DataManager::DataManager(const std::string &file_in, const std::string &dir_out, const bool auto_gain, const bool cherenkov)
@@ -57,4 +58,49 @@ bool DataManager::next()
     if (m_fin.eof())
         m_file_end = true;
     return true;
+}
+
+std::vector<DataManager::EventInfo> DataManager::scan_events()
+{
+    std::vector<EventInfo> events;
+    m_fin.clear();
+    m_fin.seekg(0, std::ios::beg);
+    std::vector<uint8_t> file_data((std::istreambuf_iterator<char>(m_fin)), std::istreambuf_iterator<char>());
+    std::size_t pos = 0;
+    while (true)
+    {
+        // 找到 HEAD
+        auto head_it = std::search(file_data.begin() + pos, file_data.end(), EVENT_HEAD.begin(), EVENT_HEAD.end());
+        if (head_it == file_data.end())
+            break;
+        std::size_t head_pos = std::distance(file_data.begin(), head_it);
+
+        // 找到下一个 FOOT
+        auto foot_it = std::search(head_it + EVENT_HEAD_SIZE, file_data.end(), EVENT_FOOT.begin(), EVENT_FOOT.end());
+        std::size_t foot_pos = (foot_it == file_data.end()) ? std::string::npos : std::distance(file_data.begin(), foot_it) + EVENT_FOOT_SIZE;
+
+        // 检查异常：如果下一个 HEAD 在 FOOT 之前，说明 FOOT 丢失
+        auto next_head_it = std::search(head_it + EVENT_HEAD_SIZE, file_data.end(), EVENT_HEAD.begin(), EVENT_HEAD.end());
+        bool is_abnormal = false;
+        if (foot_it == file_data.end() || (next_head_it != file_data.end() && std::distance(file_data.begin(), next_head_it) < std::distance(file_data.begin(), foot_it)))
+        {
+            is_abnormal = true;
+            // 如果异常，事件结束位置设为下一个 HEAD 或文件末尾
+            foot_pos = (next_head_it == file_data.end()) ? file_data.size() : std::distance(file_data.begin(), next_head_it);
+        }
+
+        events.push_back({head_pos, foot_pos, is_abnormal});
+        pos = foot_pos;
+        if (pos >= file_data.size())
+            break;
+    }
+    return events;
+}
+
+std::vector<uint8_t> DataManager::get_event(const EventInfo &info)
+{
+    if (info.foot_pos == std::string::npos || info.head_pos >= info.foot_pos)
+        return {};
+    std::vector<uint8_t> result(m_buffer.begin() + info.head_pos, m_buffer.begin() + info.foot_pos);
+    return result;
 }

@@ -32,12 +32,12 @@ int Config::Run()
 		}
 		else
 		{
-			DataManager dm;
 			ifstream dat_list(conf["DAT-ROOT"]["file-list"].as<std::string>());
 			string dat_temp;
 			while (dat_list >> dat_temp) // One .dat file
 			{
-				dm.Decode(dat_temp, conf["DAT-ROOT"]["output-dir"].as<std::string>(), conf["DAT-ROOT"]["auto-gain"].as<bool>(), conf["DAT-ROOT"]["cherenkov"].as<bool>());
+				DataManager dm(dat_temp, conf["DAT-ROOT"]["output-dir"].as<std::string>(),
+							   conf["DAT-ROOT"]["auto-gain"].as<bool>(), conf["DAT-ROOT"]["cherenkov"].as<bool>());
 			}
 		}
 	}
