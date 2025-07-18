@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 #include "config.h"
-#include "DatManager.h"
+#include "DataManager.hpp"
 #include "DacManager.h"
 #include "PedestalManager.h"
 
@@ -16,7 +16,7 @@ void Config::Parse(const string config_file)
 	cout << "HBUANA Github Repository: " << conf["hbuana"]["github"].as<std::string>() << endl;
 }
 
-// Run DatManager Class
+// Run DataManager Class
 int Config::Run()
 {
 	if (conf["DAT-ROOT"]["on-off"].as<bool>())
@@ -32,7 +32,7 @@ int Config::Run()
 		}
 		else
 		{
-			DatManager dm;
+			DataManager dm;
 			ifstream dat_list(conf["DAT-ROOT"]["file-list"].as<std::string>());
 			string dat_temp;
 			while (dat_list >> dat_temp) // One .dat file

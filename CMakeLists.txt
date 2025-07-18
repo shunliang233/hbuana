@@ -32,7 +32,7 @@ include_directories(${YAML_CPP_INCLUDE_DIR})
 # Add static librarys
 add_library(HBase STATIC src/HBase.cxx)
 # Add executable
-add_executable(hbuana src/main.cxx src/DatManager.cxx src/PedestalManager.cxx src/DacManager.cxx src/config.cxx)
+add_executable(hbuana src/main.cxx src/DataManager.cxx src/PedestalManager.cxx src/DacManager.cxx src/config.cxx)
 # Link libraries
 target_link_libraries(hbuana ${ROOT_LIBRARIES} yaml-cpp HBase Spectrum)
 
