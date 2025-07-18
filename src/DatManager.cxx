@@ -192,12 +192,12 @@ int DatManager::CatchSPIROCBag(ifstream &f_in, vector<int> &buffer_v, int &layer
 		return 1;
 }
 
-int DatManager::CatchSPIROCBag(vector<int> &EventBuffer_v, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID)
+int DatManager::CatchSPIROCBag(vector<int> &event_v, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID)
 {
 	// cout<<"catch a bag"<<endl;
-	if (EventBuffer_v.size() < 74)
+	if (event_v.size() < 74)
 	{
-		EventBuffer_v.clear();
+		event_v.clear();
 		return 0;
 	}
 	buffer_v.clear();
@@ -206,55 +206,55 @@ int DatManager::CatchSPIROCBag(vector<int> &EventBuffer_v, vector<int> &buffer_v
 	int buffer = 0;
 	int i_begin = 0;
 	int i_end = 0;
-	// cout <<hex<<EventBuffer_v[0]<<" "<<EventBuffer_v[1]<<" "<<EventBuffer_v[2]<<" "<<EventBuffer_v[3]<<" "<<EventBuffer_v.size()<<endl;
-	for (int i = 0; i < EventBuffer_v.size(); ++i)
+	// cout <<hex<<event_v[0]<<" "<<event_v[1]<<" "<<event_v[2]<<" "<<event_v[3]<<" "<<event_v.size()<<endl;
+	for (int i = 0; i < event_v.size(); ++i)
 	{
-		if (b_begin == 0 && EventBuffer_v[i] == 0xfa && EventBuffer_v[i + 1] == 0x5a &&
-			EventBuffer_v[i + 2] == 0xfa && EventBuffer_v[i + 3] == 0x5a && i < EventBuffer_v.size() - 4)
+		if (b_begin == 0 && i < event_v.size() - 4 && event_v[i] == 0xfa && event_v[i + 1] == 0x5a &&
+			event_v[i + 2] == 0xfa && event_v[i + 3] == 0x5a)
 		{
 			b_begin = 1;
 			i_begin = i;
-			// cout<<hex<<i_begin<<" "<<EventBuffer_v[i]<<" "<<EventBuffer_v[i+1]<<" "<<EventBuffer_v[i+2]<<" "<<EventBuffer_v[i+3]<<" "<<EventBuffer_v.size()<<endl;
+			// cout<<hex<<i_begin<<" "<<event_v[i]<<" "<<event_v[i+1]<<" "<<event_v[i+2]<<" "<<event_v[i+3]<<" "<<event_v.size()<<endl;
 		}
-		if (b_begin == 1 && i > 2 && EventBuffer_v[i - 3] == 0xfe && EventBuffer_v[i - 2] == 0xee &&
-			EventBuffer_v[i - 1] == 0xfe && EventBuffer_v[i] == 0xee)
+		if (b_begin == 1 && i > 2 && event_v[i - 3] == 0xfe && event_v[i - 2] == 0xee &&
+			event_v[i - 1] == 0xfe && event_v[i] == 0xee)
 		{
 			b_end = 1;
 			i_end = i;
 			break;
 		}
 	}
-	// cout<<hex<<i_begin<<" "<<i_end<<" "<<EventBuffer_v.size()<<" "<<b_begin<<" "<<b_end<<endl;
+	// cout<<hex<<i_begin<<" "<<i_end<<" "<<event_v.size()<<" "<<b_begin<<" "<<b_end<<endl;
 	if ((b_begin * b_end) == 0)
 	{
 		buffer_v.clear();
-		EventBuffer_v.clear();
+		event_v.clear();
 		return 0;
 	}
-	buffer_v.assign(EventBuffer_v.begin() + i_begin, EventBuffer_v.begin() + i_end + 1);
-	EventBuffer_v.erase(EventBuffer_v.begin(), EventBuffer_v.begin() + i_end + 1);
+	buffer_v.assign(event_v.begin() + i_begin, event_v.begin() + i_end + 1);
+	event_v.erase(event_v.begin(), event_v.begin() + i_end + 1);
 	// Read in buffer over
-	if (EventBuffer_v.size() < 2)
+	if (event_v.size() < 2)
 	{
-		EventBuffer_v.clear();
+		event_v.clear();
 		buffer_v.clear();
 		cout << " abnormal Eventbuffer " << endl;
 		return 0;
 	}
-	if (EventBuffer_v[0] != 0xff)
+	if (event_v[0] != 0xff)
 	{
-		cout << " abnormal layer ff " << hex << EventBuffer_v[0] << endl;
+		cout << " abnormal layer ff " << hex << event_v[0] << endl;
 		buffer_v.clear();
 		return 0;
 	}
-	if (EventBuffer_v[1] < 0 || EventBuffer_v[1] > 39)
+	if (event_v[1] < 0 || event_v[1] > 39)
 	{
-		cout << " abnormal layer " << hex << EventBuffer_v[1] << endl;
+		cout << " abnormal layer " << hex << event_v[1] << endl;
 		buffer_v.clear();
 		return 0;
 	}
-	layer_id = EventBuffer_v[1];
-	EventBuffer_v.erase(EventBuffer_v.begin(), EventBuffer_v.begin() + 2);
+	layer_id = event_v[1];
+	event_v.erase(event_v.begin(), event_v.begin() + 2);
 	// cout<<"cycleID "<<hex<<cycleID<<endl;
 	if ((buffer_v.size()) % 2)
 	{
@@ -469,17 +469,17 @@ int DatManager::Decode(const string &input_file, const string &output_file, cons
 		// if (Event_No % 1000 == 0)
 		// 	cout << "Event_No: " << Event_No << " Bag_No " << Bag_No << endl;
 		_buffer_v.clear();
-		_EventBuffer_v.clear();
-		CatchEventBag(f_in, _EventBuffer_v, cherenkov_counter);
+		m_event_v.clear();
+		CatchEventBag(f_in, m_event_v, cherenkov_counter);
 		Bag_No++;
 		b_Event = 0;
 		b_chipbuffer = Chipbuffer_empty(); // just in case
-		// cout << dec << Bag_No << " CatchEventBag size " << _EventBuffer_v.size() << " cherenkov_counter " << cherenkov_counter << endl;
-		while (_EventBuffer_v.size() > 74)
+		// cout << dec << Bag_No << " CatchEventBag size " << m_event_v.size() << " cherenkov_counter " << cherenkov_counter << endl;
+		while (m_event_v.size() > 74) // 74 is the minimum size for a valid SPIROC bag
 		{
-			CatchSPIROCBag(_EventBuffer_v, _buffer_v, layer_id, cycleID, triggerID);
+			CatchSPIROCBag(m_event_v, _buffer_v, layer_id, cycleID, triggerID);
 			// if(triggerID==last_trigID){
-			// 	_EventBuffer_v.clear();
+			// 	m_event_v.clear();
 			// 	_buffer_v.clear();
 			// 	continue;
 			// }

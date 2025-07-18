@@ -39,7 +39,8 @@ private:
 	vector<unsigned char> m_buffer;									// Buffer for read data
 	size_t m_buffer_start = 0;									// Start position of valid data in m_buffer
 
-	vector<int> _EventBuffer_v; // Buffer for 1 event data
+	vector<int> m_event_v; // Vector for 1 event data
+	vector<int> _buffer_v; // Buffer for 1 SPIROC data
 
 public:
 	static const int channel_FEE = 73; //(36charges+36times + BCIDs )*16column+ ChipID
@@ -48,7 +49,6 @@ public:
 	int _cycleID;
 	int _triggerID;
 	unsigned int _Event_Time;
-	vector<int> _buffer_v;
 	vector<int> _chip_v[Layer_No][chip_No];
 	vector<int> _cellID;
 	vector<int> _bcid;
@@ -67,7 +67,7 @@ public:
 	/**
 	 * @brief 将原始二进制数据文件解码为物理分析所需的结构化数据，并保存为 ROOT 文件
 	 * @param binary_name 原始二进制数据文件名
-	 * @param raw_name 解码后的原始数据文件名
+	 * @param raw_name 输出目录名
 	 * @param b_auto_gain 是否自动增益调整（默认为 false）
 	 * @param b_cherenkov 是否启用切伦科夫探测器（默认为 false）
 	 * @return 返回解码结果状态（0 表示成功，非 0 表示失败）
@@ -83,7 +83,16 @@ public:
 	 */
 	int CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &cherenkov_counter);
 
-	int CatchSPIROCBag(vector<int> &EventBuffer_v, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID);
+	/**
+	 * @brief 从 event_v 中捕获一个 layer 包
+	 * @param event_v 存储 event 数据的 vector
+	 * @param buffer_v 存储捕获的 SPIROC 数据
+	 * @param layer_id 层 ID
+	 * @param cycleID 周期 ID
+	 * @param triggerID 触发 ID
+	 * @return 返回捕获 SPIROC 事件包的状态（0 表示失败，1 表示成功）
+	 */
+	int CatchSPIROCBag(vector<int> &event_v, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID);
 	int CatchSPIROCBag(ifstream &f_in, vector<int> &buffer_v, int &layer_id, int &cycleID, int &triggerID);
 
 	/**
@@ -96,8 +105,8 @@ public:
 	int DecodeAEvent(vector<int> &chip_v, int layer_ID, int Memo_ID, const bool b_auto_gain);
 
 	/**
-	 * @brief 检查芯片缓冲区是否为空
-	 * @return 返回芯片缓冲区状态（0 表示为空，1 表示不为空）
+	 * @brief 检查所有 chip 的缓冲区是否都为空
+	 * @return 返回芯片缓冲区状态（0 表示都为空，1 表示存在缓冲区不为空的 chip）
 	 */
 	int Chipbuffer_empty()
 	{
