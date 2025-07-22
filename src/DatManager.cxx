@@ -63,40 +63,62 @@ int DatManager::CatchEventBag(ifstream &f_in, vector<int> &buffer_v, long &chere
 		return 0;
 	}
 
-	// 2. Find footer
+	// 4. Find footer
 	bool found_footer = false;
+	bool found_next_header = false;
 	size_t footer_end_pos = 0;
 
 	// Check if footer already exists in current buffer
-	auto it = std::search(m_buffer.begin() + m_buffer_start, m_buffer.end(),
-						  s_event_foot.begin(), s_event_foot.end());
-	if (it != m_buffer.end())
+	auto it_footer = std::search(m_buffer.begin() + m_buffer_start, m_buffer.end(),
+								 s_event_foot.begin(), s_event_foot.end());
+	auto it_next_head = std::search(m_buffer.begin() + m_buffer_start + s_event_head_size, m_buffer.end(),
+									s_event_head.begin(), s_event_head.end());
+	size_t pos_footer = std::distance(m_buffer.begin(), it_footer);
+	size_t pos_next_head = std::distance(m_buffer.begin(), it_next_head);
+	if (pos_footer < pos_next_head) // 找到 footer 并小于下一个 header
 	{
 		found_footer = true;
-		footer_end_pos = std::distance(m_buffer.begin(), it) + s_event_foot_size;
+		footer_end_pos = pos_footer + s_event_foot_size;
+	}
+	else if (pos_next_head < pos_footer) // 找到 next_header 并小于下一个 footer
+	{
+		cout << "CatchEventBag: footer found after next header." << endl;
+		found_next_header = true;
+		footer_end_pos = pos_next_head;
 	}
 
-	// If footer not found in current buffer, read more data from file
-	while (!found_footer && f_in.read(reinterpret_cast<char *>(temp_buffer.data()), s_read_size))
+	// If footer or next header not found in current buffer, read more data from file
+	while (!found_footer && !found_next_header &&
+		   f_in.read(reinterpret_cast<char *>(temp_buffer.data()), s_read_size))
 	{
 		size_t bytes_read = f_in.gcount();
 		size_t old_size = m_buffer.size();
 		m_buffer.insert(m_buffer.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_read);
 
 		// Search for footer in the newly added data plus some overlap
-		size_t search_start = std::max(m_buffer_start,
-									   old_size > s_event_foot_overlap ? old_size - s_event_foot_overlap : 0);
-		it = std::search(m_buffer.begin() + search_start, m_buffer.end(),
-						 s_event_foot.begin(), s_event_foot.end());
-		if (it != m_buffer.end())
-		{
-			found_footer = true;
-			footer_end_pos = std::distance(m_buffer.begin(), it) + s_event_foot_size;
-			break;
-		}
+		size_t search_start = old_size - s_event_foot_overlap; // Now at least 4 bytes after m_buffer_start
+		it_footer = std::search(m_buffer.begin() + search_start, m_buffer.end(),
+								s_event_foot.begin(), s_event_foot.end());
+		it_next_head = std::search(m_buffer.begin() + search_start, m_buffer.end(),
+								   s_event_head.begin(), s_event_head.end());
+	pos_footer = std::distance(m_buffer.begin(), it_footer);
+	pos_next_head = std::distance(m_buffer.begin(), it_next_head);
+	if (pos_footer < pos_next_head) // 找到 footer 并小于下一个 header
+	{
+		found_footer = true;
+		footer_end_pos = pos_footer + s_event_foot_size;
+		break;
+	}
+	else if (pos_next_head < pos_footer) // 找到 next_header 并小于下一个 footer
+	{
+		cout << "CatchEventBag: footer found after next header." << endl;
+		found_next_header = true;
+		footer_end_pos = pos_next_head;
+		break;
+	}
 	}
 
-	if (!found_footer)
+	if (!found_footer && !found_next_header)
 	{
 		cout << "CatchEventBag:abnormal end" << endl;
 		return 0;
