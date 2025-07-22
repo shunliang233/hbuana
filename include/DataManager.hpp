@@ -1,10 +1,10 @@
 #pragma once
-
 #include <array>
 #include <cstdint>
 #include <fstream>
 #include <vector>
 #include <string>
+#include "Event.hpp"
 
 class DataManager
 {
@@ -42,23 +42,48 @@ private:
                                               LAYER_SIZE * LAYER_NO + 4 +
                                               EVENT_FOOT_SIZE;
 
+    // 5. Read file
+    static constexpr std::size_t CHUNK_SIZE = 4096; // Size of each read chunk
+    std::ifstream m_fin;                            // Input file stream
+
+    // 6. Buffer and state
+    std::vector<std::uint8_t> m_buffer; // 持续的缓冲区，存储未处理的数据
+    std::size_t m_offset = 0;           // 文件中已读取的总字节数
+    bool m_file_end = false;            // 标记文件是否已结束
+    std::vector<std::uint8_t> m_event;  // 当前事件数据
+
+private:
+    /**
+     * @brief 读取下一个数据块
+     * @return 如果成功读取到数据块，返回 true; 如果文件结束或读取失败，返回 false
+     */
+    bool read();
+
+    /**
+     * @brief 顺序读取下一个完整事例
+     * @return 如果成功读取到事例，返回 true; 如果读取失败，返回 false
+     */
+    bool get_next_event();
+
 public:
-    DataManager(const std::string &file_in, const std::string &dir_out, const bool auto_gain = 0, const bool cherenkov = 0);
+    /**
+     * @brief 构造函数，打开 file_in 文件
+     * @param file_in 输入文件路径
+     * @param dir_out 输出目录路径
+     * @param auto_gain 是否自动增益调整（默认为 false）
+     * @param cherenkov 是否启用切伦科夫探测器（默认为 false）
+     */
+    explicit DataManager(const std::string &file_in, const std::string &dir_out = ".", const bool auto_gain = false, const bool cherenkov = false);
+
+    /**
+     * @brief 析构函数，关闭文件
+     */
     ~DataManager();
 
     /**
-     * @brief 读取下一个数据块
-     * @return 如果成功读取到数据块，返回 true；如果文件结束或读取失败，返回 false
+     * @brief 重置数据管理器到文件开头，清除所有缓冲区
      */
-    bool next();
-
-    // 读取并分割所有事件，返回每个事件的起止位置和异常标记
-    struct EventInfo
-    {
-        std::size_t head_pos;
-        std::size_t foot_pos; // 如果没有找到 FOOT，则为 std::string::npos
-        bool is_abnormal;     // true 表示丢失 FOOT
-    };
+    void reset();
 
     /**
      * @brief 扫描整个文件，分割所有事件
@@ -67,18 +92,21 @@ public:
     std::vector<EventInfo> scan_events();
 
     /**
+     * @brief 从文件开头扫描所有事件
+     * @return 所有事件的信息列表
+     */
+    std::vector<EventInfo> scan_all_events();
+
+    /**
      * @brief 读取指定事件内容
      * @param info 事件信息
      * @return 事件的字节内容
      */
-    std::vector<uint8_t> get_event(const EventInfo &info);
+    std::vector<std::uint8_t> get_event(const EventInfo &info);
 
-private:
-    static constexpr std::size_t CHUNK_SIZE = 4096; // Size of each read chunk
-    static constexpr std::size_t WINDOW_SIZE = 8;   // Size of the processing window
-    std::ifstream m_fin;                            // Input file stream
-    std::vector<uint8_t> m_buffer;                  // 当前窗口的内容
-    std::vector<uint8_t> m_tail;                    // 上一块的尾部
-    std::size_t m_offset = 0;                       // 当前窗口在文件中的起始偏移
-    bool m_file_end = false;                        // 标记文件是否已结束
+    /**
+     * @brief 检查是否还有更多事件可读取
+     * @return true 如果还有事件，false 如果已到文件末尾
+     */
+    bool has_more_events() const;
 };

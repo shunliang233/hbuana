@@ -79,6 +79,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "multi_span": "cpp",
+        "string_span": "cpp"
     }
 }

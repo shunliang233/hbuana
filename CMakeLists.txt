@@ -1,6 +1,6 @@
 #set(CMAKE_CXX_STANDARD 14)
 ###############################################
-# Project hbuana
+# Project hbucon
 ###############################################
 
 # Cmake minimum requirement
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Project name and version
-project ( hbuana VERSION 1.0.0 LANGUAGES C CXX )
+project ( hbucon VERSION 1.0.0 LANGUAGES C CXX )
 
 # CMake type
 set(CMAKE_BUILD_TYPE Debug)
@@ -32,11 +32,11 @@ include_directories(${YAML_CPP_INCLUDE_DIR})
 # Add static librarys
 add_library(HBase STATIC src/HBase.cxx)
 # Add executable
-add_executable(hbuana src/main.cxx src/DataManager.cxx src/PedestalManager.cxx src/DacManager.cxx src/config.cxx)
+add_executable(hbucon src/main.cxx src/Event.cpp src/DataManager.cpp src/PedestalManager.cxx src/DacManager.cxx src/config.cxx)
 # Link libraries
-target_link_libraries(hbuana ${ROOT_LIBRARIES} yaml-cpp HBase Spectrum)
+target_link_libraries(hbucon ${ROOT_LIBRARIES} yaml-cpp HBase Spectrum)
 
-# Add scripts to make setup.sh to include hbuana into environment
+# Add scripts to make setup.sh to include hbucon into environment
 execute_process(COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/config/setup.sh ${PROJECT_BINARY_DIR})
 execute_process(COMMAND sed -i "s:PROJECTHERE:${CMAKE_CURRENT_SOURCE_DIR}:g" ${PROJECT_BINARY_DIR}/setup.sh)
 execute_process(COMMAND chmod +x ${PROJECT_BINARY_DIR}/setup.sh)
